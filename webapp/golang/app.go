@@ -681,7 +681,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	// 	log.Print(err)
 	// 	return
 	// }
-	posts, err := joinPosts(results, getCSRFToken(r), false)
+	posts, err := joinPosts(getCSRFToken(r), false)
 
 	if len(posts) == 0 {
 		w.WriteHeader(http.StatusNotFound)
