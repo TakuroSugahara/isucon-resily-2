@@ -733,7 +733,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 		newItem := &memcache.Item{
 			Key:        cacheKey,
 			Value:      post.Imgdata,
-			Expiration: 600,
+			Expiration: 3600,
 		}
 		if err := memcacheClient.Set(newItem); err != nil {
 			log.Print(err)
