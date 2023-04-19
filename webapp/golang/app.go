@@ -834,16 +834,16 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	ext := chi.URLParam(r, "ext")
 
 	// キャッシュからデータを取得
-	cacheKey := fmt.Sprintf("%s.%s", pidStr, ext)
-	item, err := memcacheClient.Get(cacheKey)
-	if err == nil {
-		w.Header().Set("Content-Type", getMime(ext))
-		_, err := w.Write(item.Value)
-		if err != nil {
-			log.Print(err)
-		}
-		return
-	}
+	// cacheKey := fmt.Sprintf("%s.%s", pidStr, ext)
+	// item, err := memcacheClient.Get(cacheKey)
+	// if err == nil {
+	// 	w.Header().Set("Content-Type", getMime(ext))
+	// 	_, err := w.Write(item.Value)
+	// 	if err != nil {
+	// 		log.Print(err)
+	// 	}
+	// 	return
+	// }
 
 	post := Post{}
 	err = db.Get(&post, "SELECT * FROM `posts` WHERE `id` = ?", pid)
@@ -863,14 +863,14 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		newItem := &memcache.Item{
-			Key:        cacheKey,
-			Value:      post.Imgdata,
-			Expiration: 3600,
-		}
-		if err := memcacheClient.Set(newItem); err != nil {
-			log.Print(err)
-		}
+		// newItem := &memcache.Item{
+		// 	Key:        cacheKey,
+		// 	Value:      post.Imgdata,
+		// 	Expiration: 3600,
+		// }
+		// if err := memcacheClient.Set(newItem); err != nil {
+		// 	log.Print(err)
+		// }
 		return
 	}
 
