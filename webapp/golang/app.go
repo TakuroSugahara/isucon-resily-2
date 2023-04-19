@@ -702,7 +702,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	ext := chi.URLParam(r, "ext")
 
 	// キャッシュからデータを取得
-	cacheKey := fmt.Sprintf("%d.%s", pid, ext)
+	cacheKey := fmt.Sprintf("%s.%s", pidStr, ext)
 	item, err := memcacheClient.Get(cacheKey)
 	if err == nil {
 		w.Header().Set("Content-Type", getMime(ext))
@@ -724,6 +724,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 		ext == "png" && post.Mime == "image/png" ||
 		ext == "gif" && post.Mime == "image/gif" {
 		w.Header().Set("Content-Type", post.Mime)
+		w.Header().Set("Cache-Control", "max-age=86400")
 		_, err := w.Write(post.Imgdata)
 		if err != nil {
 			log.Print(err)
