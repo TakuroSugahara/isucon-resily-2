@@ -19,7 +19,7 @@ read
 
 echo
 echo ":: ACCESS LOG       ====>"
-sudo cat /var/log/nginx/access.log | alp ltsv -m "/api/player/player/[0-9a-zA-Z]+,/api/player/competition/[0-9a-zA-Z]+/ranking,/api/organizer/competition/[0-9a-zA-Z]+/finish,/api/organizer/competition/[0-9a-zA-Z]+/score,/api/organizer/player/[0-9a-zA-Z]+/disqualified" --sort sum -r > /tmp/access.txt
+sudo cat /var/log/nginx/access.log | alp --sum -r -f /var/log/nginx/access.log > /tmp/access.txt
 cat /tmp/access.txt
 
 echo
