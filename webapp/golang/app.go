@@ -593,7 +593,7 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 	// 	log.Print(err)
 	// 	return
 	// }
-	posts, err := joinPosts(getCSRFToken(r), false)
+	posts, err := joinPostsByUserId(user.ID, getCSRFToken(r), false)
 	if err != nil {
 		log.Print(err)
 		return
@@ -607,11 +607,6 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	postIDs := []int{}
-	err = db.Select(&postIDs, "SELECT `id` FROM `posts` WHERE `user_id` = ?", user.ID)
-	if err != nil {
-		log.Print(err)
-		return
-	}
 	postCount := len(postIDs)
 
 	commentedCount := 0
