@@ -213,56 +213,56 @@ func joinPosts(posts []Post, csrfToken string, allComments bool) ([]Post, error)
 	return posts, nil
 }
 
-func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
-	var posts []Post
-
-	for _, p := range results {
-		err := db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		query := "SELECT * FROM `comments` WHERE `post_id` = ? ORDER BY `created_at` DESC"
-		if !allComments {
-			query += " LIMIT 3"
-		}
-		var comments []Comment
-		err = db.Select(&comments, query, p.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		for i := 0; i < len(comments); i++ {
-			err := db.Get(&comments[i].User, "SELECT * FROM `users` WHERE `id` = ?", comments[i].UserID)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// reverse
-		for i, j := 0, len(comments)-1; i < j; i, j = i+1, j-1 {
-			comments[i], comments[j] = comments[j], comments[i]
-		}
-
-		p.Comments = comments
-
-		err = db.Get(&p.User, "SELECT * FROM `users` WHERE `id` = ?", p.UserID)
-		if err != nil {
-			return nil, err
-		}
-
-		p.CSRFToken = csrfToken
-
-		if p.User.DelFlg == 0 {
-			posts = append(posts, p)
-		}
-		if len(posts) >= postsPerPage {
-			break
-		}
-	}
-
-	return posts, nil
-}
+// func makePosts(results []Post, csrfToken string, allComments bool) ([]Post, error) {
+// 	var posts []Post
+//
+// 	for _, p := range results {
+// 		err := db.Get(&p.CommentCount, "SELECT COUNT(*) AS `count` FROM `comments` WHERE `post_id` = ?", p.ID)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+//
+// 		query := "SELECT * FROM `comments` WHERE `post_id` = ? ORDER BY `created_at` DESC"
+// 		if !allComments {
+// 			query += " LIMIT 3"
+// 		}
+// 		var comments []Comment
+// 		err = db.Select(&comments, query, p.ID)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+//
+// 		for i := 0; i < len(comments); i++ {
+// 			err := db.Get(&comments[i].User, "SELECT * FROM `users` WHERE `id` = ?", comments[i].UserID)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 		}
+//
+// 		// reverse
+// 		for i, j := 0, len(comments)-1; i < j; i, j = i+1, j-1 {
+// 			comments[i], comments[j] = comments[j], comments[i]
+// 		}
+//
+// 		p.Comments = comments
+//
+// 		err = db.Get(&p.User, "SELECT * FROM `users` WHERE `id` = ?", p.UserID)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+//
+// 		p.CSRFToken = csrfToken
+//
+// 		if p.User.DelFlg == 0 {
+// 			posts = append(posts, p)
+// 		}
+// 		if len(posts) >= postsPerPage {
+// 			break
+// 		}
+// 	}
+//
+// 	return posts, nil
+// }
 
 func imageURL(p Post) string {
 	ext := ""
@@ -499,11 +499,12 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := makePosts(results, getCSRFToken(r), false)
-	if err != nil {
-		log.Print(err)
-		return
-	}
+	// posts, err := makePosts(results, getCSRFToken(r), false)
+	// if err != nil {
+	// 	log.Print(err)
+	// 	return
+	// }
+	posts, err := joinPosts(results, getCSRFToken(r), false)
 
 	commentCount := 0
 	err = db.Get(&commentCount, "SELECT COUNT(*) AS count FROM `comments` WHERE `user_id` = ?", user.ID)
@@ -587,11 +588,12 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := makePosts(results, getCSRFToken(r), false)
-	if err != nil {
-		log.Print(err)
-		return
-	}
+	// posts, err := makePosts(results, getCSRFToken(r), false)
+	// if err != nil {
+	// 	log.Print(err)
+	// 	return
+	// }
+	posts, err := joinPosts(results, getCSRFToken(r), false)
 
 	if len(posts) == 0 {
 		w.WriteHeader(http.StatusNotFound)
@@ -623,11 +625,12 @@ func getPostsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := makePosts(results, getCSRFToken(r), true)
-	if err != nil {
-		log.Print(err)
-		return
-	}
+	// posts, err := makePosts(results, getCSRFToken(r), true)
+	// if err != nil {
+	// 	log.Print(err)
+	// 	return
+	// }
+	posts, err := joinPosts(results, getCSRFToken(r), true)
 
 	if len(posts) == 0 {
 		w.WriteHeader(http.StatusNotFound)
