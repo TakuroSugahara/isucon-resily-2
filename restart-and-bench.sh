@@ -19,11 +19,13 @@ read
 
 echo
 echo ":: ACCESS LOG       ====>"
-sudo cat /var/log/nginx/access.log | alp --sum -r -f /var/log/nginx/access.log > /tmp/access.txt
+# sudo cat /var/log/nginx/access.log | alp --sum -r -f /var/log/nginx/access.log > /tmp/access.txt
+sudo cat /var/log/nginx/access.log | alp --sum -r --aggregates "/posts/[0-9]+,/@\w+","/image/[0-9]+,/@\w"
 cat /tmp/access.txt
 
 echo
 echo ":: SLOW LOG       ====>"
-# pt-query-digest /var/lib/mysql/mysqld-slow.log > /tmp/digest.txt
-# cat /tmp/digest.txt
+pt-query-digest /var/log/mysql-slow.sql > /tmp/digest.txt
+cat /tmp/digest.txt
+
 
