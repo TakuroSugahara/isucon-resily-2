@@ -25,6 +25,6 @@ cat /tmp/access.txt
 
 echo
 echo ":: SLOW LOG       ====>"
-pt-query-digest /var/log/mysql-slow.sql > /tmp/digest.txt
+pt-query-digest /var/lib/mysql/mysqld-slow.log > /tmp/digest.txt
 cat /tmp/digest.txt
 
