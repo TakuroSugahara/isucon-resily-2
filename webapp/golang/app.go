@@ -173,6 +173,48 @@ func getFlash(w http.ResponseWriter, r *http.Request, key string) string {
 	}
 }
 
+func joinPostsByUserId(userId int, csrfToken string, allComments bool) ([]Post, error) {
+	var posts []Post
+	query := `
+		SELECT 
+			p.id, p.user_id, p.body, p.mime, p.created_at,
+			post_user.id, post_user.account_name, post_user.passhash, post_user.authority, post_user.del_flg, post_user.created_at,
+			c.id, c.post_id, c.user_id, c.comment, c.created_at, 
+			comment_user.id, comment_user.account_name, comment_user.passhash, comment_user.authority, comment_user.del_flg, comment_user.created_at
+		FROM posts p
+		LEFT JOIN users post_user ON p.user_id = post_user.id
+		LEFT JOIN comments c ON p.id = c.post_id
+		LEFT JOIN users comment_user ON c.user_id = comment_user.id
+		WHERE p.user_id = ?
+		ORDER BY p.created_at AND c.createdAt
+		DESC
+	`
+	if err := db.Select(&posts, query, userId); err != nil {
+		return nil, err
+	}
+
+	for _, p := range posts {
+		p.CSRFToken = csrfToken
+		originComments := p.Comments
+		if allComments {
+			for i, c := range originComments {
+				if i > 2 {
+					break
+				}
+				p.Comments[i] = c
+			}
+		}
+
+		var reverseComments []Comment
+		for i, j := 0, len(reverseComments)-1; i < j; i, j = i+1, j-1 {
+			reverseComments[i], reverseComments[j] = reverseComments[j], reverseComments[i]
+		}
+		p.Comments = reverseComments
+	}
+
+	return posts, nil
+}
+
 func joinPostsById(postId int, csrfToken string, allComments bool) ([]Post, error) {
 	var posts []Post
 	query := `
@@ -497,7 +539,11 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	// 	log.Print(err)
 	// 	return
 	// }
-	posts, err := joinPosts(results, getCSRFToken(r), false)
+	posts, err := joinPosts(getCSRFToken(r), false)
+	if err != nil {
+		log.Print(err)
+		return
+	}
 
 	fmap := template.FuncMap{
 		"imageURL": imageURL,
@@ -534,20 +580,24 @@ func getAccountName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results := []Post{}
+	// results := []Post{}
 
-	err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `user_id` = ? ORDER BY `created_at` DESC", user.ID)
-	if err != nil {
-		log.Print(err)
-		return
-	}
+	// err = db.Select(&results, "SELECT `id`, `user_id`, `body`, `mime`, `created_at` FROM `posts` WHERE `user_id` = ? ORDER BY `created_at` DESC", user.ID)
+	// if err != nil {
+	// 	log.Print(err)
+	// 	return
+	// }
 
 	// posts, err := makePosts(results, getCSRFToken(r), false)
 	// if err != nil {
 	// 	log.Print(err)
 	// 	return
 	// }
-	posts, err := joinPosts(results, getCSRFToken(r), false)
+	posts, err := joinPosts(getCSRFToken(r), false)
+	if err != nil {
+		log.Print(err)
+		return
+	}
 
 	commentCount := 0
 	err = db.Get(&commentCount, "SELECT COUNT(*) AS count FROM `comments` WHERE `user_id` = ?", user.ID)
