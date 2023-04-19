@@ -66,12 +66,14 @@ type Comment struct {
 	User      User
 }
 
+var memcacheClient *memcache.Client
+
 func init() {
 	memdAddr := os.Getenv("ISUCONP_MEMCACHED_ADDRESS")
 	if memdAddr == "" {
 		memdAddr = "localhost:11211"
 	}
-	memcacheClient := memcache.New(memdAddr)
+	memcacheClient = memcache.New(memdAddr)
 	store = gsm.NewMemcacheStore(memcacheClient, "iscogram_", []byte("sendagaya"))
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 }
@@ -697,14 +699,26 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ext := chi.URLParam(r, "ext")
+
+	// キャッシュからデータを取得
+	cacheKey := fmt.Sprintf("%d.%s", pid, ext)
+	item, err := memcacheClient.Get(cacheKey)
+	if err == nil {
+		w.Header().Set("Content-Type", getMime(ext))
+		_, err := w.Write(item.Value)
+		if err != nil {
+			log.Print(err)
+		}
+		return
+	}
+
 	post := Post{}
 	err = db.Get(&post, "SELECT * FROM `posts` WHERE `id` = ?", pid)
 	if err != nil {
 		log.Print(err)
 		return
 	}
-
-	ext := chi.URLParam(r, "ext")
 
 	if ext == "jpg" && post.Mime == "image/jpeg" ||
 		ext == "png" && post.Mime == "image/png" ||
@@ -715,10 +729,32 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 			log.Print(err)
 			return
 		}
+
+		newItem := &memcache.Item{
+			Key:        cacheKey,
+			Value:      post.Imgdata,
+			Expiration: 600,
+		}
+		if err := memcacheClient.Set(newItem); err != nil {
+			log.Print(err)
+		}
 		return
 	}
 
 	w.WriteHeader(http.StatusNotFound)
+}
+
+func getMime(ext string) string {
+	switch ext {
+	case "jpg":
+		return "image/jpeg"
+	case "png":
+		return "image/png"
+	case "gif":
+		return "image/gif"
+	default:
+		return ""
+	}
 }
 
 func postComment(w http.ResponseWriter, r *http.Request) {
@@ -871,4 +907,3 @@ func main() {
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
-
